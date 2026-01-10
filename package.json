@@ -1,0 +1,30 @@
+{
+  "name": "contribute_shooting",
+  "version": "1.0.0",
+  "description": "shooting with GitHub contribution graph",
+  "homepage": "https://github.com/SUKEsann2000/contribute_shooting#readme",
+  "bugs": {
+    "url": "https://github.com/SUKEsann2000/contribute_shooting/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SUKEsann2000/contribute_shooting.git"
+  },
+  "license": "MIT",
+  "author": "SUKEsann2000",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "contribution": "^8.0.0",
+    "dotenv": "^17.2.3",
+    "zod": "^4.3.5"
+  }
+}
