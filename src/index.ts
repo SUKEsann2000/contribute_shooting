@@ -62,14 +62,14 @@ function checkCollision(ball: Ball, block: Block): boolean {
 
 function tick(ball: Ball, blocks: Block[], ballPath: { x: number; y: number }[]) {
     // 画面端で跳ね返る
-    if (ball.getX() - ball.getRadius() < 0) {
+    if (ball.getX() < 0) {
         ball.setX(ball.getRadius());
         ball.bounceX();
     } else if (ball.getX() + ball.getRadius() > COLS) {
         ball.setX(COLS - ball.getRadius());
         ball.bounceX();
     }
-    if (ball.getY() - ball.getRadius() < 0) {
+    if (ball.getY() < 0) {
         ball.setY(ball.getRadius());
         ball.bounceY();
     } else if (ball.getY() + ball.getRadius() > ROWS) {
