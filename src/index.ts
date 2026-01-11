@@ -11,7 +11,7 @@ const ROWS = 7;
 const COLS = 53;
 const BLOCK_SIZE = 10;
 const BALL_RADIUS = 0.5;
-const FPS = 60;
+const FPS = 120;
 
 async function getContributes(username: string, token: string): Promise<Contribute[]> {
     const query = `
@@ -153,8 +153,8 @@ export async function main() {
     // ballのキーフレーム
     const keyframes = ballPath.map((pos, i) => {
         const pct = (i / (ballPath.length - 1)) * 100;
-        const x = Math.min(pos.x * BLOCK_SIZE, COLS * BLOCK_SIZE - ballSize);
-        const y = Math.min(pos.y * BLOCK_SIZE, ROWS * BLOCK_SIZE - ballSize);
+        const x = pos.x * BLOCK_SIZE - ballSize / 2;
+        const y = pos.y * BLOCK_SIZE - ballSize / 2;
         return `${pct.toFixed(2)}% { transform: translate(${x}px, ${y}px); }`;
     }).join('\n');
 
