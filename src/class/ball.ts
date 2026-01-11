@@ -1,23 +1,12 @@
+import { Pixel, pixel } from "../types.js";
 export class Ball {
-    private x: number;
-    private y: number;
-    private vx: number;
-    private vy: number;
-    private radius: number;
-
     constructor(
-        x: number,
-        y: number,
-        vx: number,
-        vy: number,
-        radius: number
-    ) {
-        this.x = x;
-        this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-        this.radius = radius;
-    }
+        private x: Pixel,
+        private y: Pixel,
+        private vx: Pixel,
+        private vy: Pixel,
+        private radius: Pixel
+    ) {}
 
     getX() { return this.x; }
     getY() { return this.y; }
@@ -25,17 +14,17 @@ export class Ball {
     getVY() { return this.vy; }
     getRadius() { return this.radius; }
 
-    setX(x: number) { this.x = x; }
-    setY(y: number) { this.y = y; }
-    setVX(vx: number) { this.vx = vx; }
-    setVY(vy: number) { this.vy = vy; }
-    setRadius(radius: number) { this.radius = radius }
+    setX(x: Pixel) { this.x = x; }
+    setY(y: Pixel) { this.y = y; }
+    setVX(vx: Pixel) { this.vx = vx; }
+    setVY(vy: Pixel) { this.vy = vy; }
+    setRadius(radius: Pixel) { this.radius = radius }
 
     move() {
-        this.x += this.vx;
-        this.y += this.vy;
+        this.x = pixel(this.x + this.vx);
+        this.y = pixel(this.y + this.vy);
     }
 
-    bounceY() { this.vy = -this.vy; }
-    bounceX() { this.vx = -this.vx; }
+    bounceY() { this.vy = pixel(-this.vy); }
+    bounceX() { this.vx = pixel(-this.vx); }
 }

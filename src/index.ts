@@ -4,6 +4,7 @@ import fs from "fs";
 import { GitHubResponseSchema } from "./schema.js";
 import { Ball } from "./class/ball.js";
 import { Block } from "./class/block.js";
+import { grid, pixel } from "./types.js";
 
 type Contribute = { date: string; contributionCount: number };
 
@@ -47,10 +48,10 @@ query ($user: String!) {
 
 // 衝突判定
 function checkCollision(ball: Ball, block: Block): boolean {
-    const bx = block.getX() / BLOCK_SIZE;
-    const by = block.getY() / BLOCK_SIZE;
-    const bw = block.getWidth() / BLOCK_SIZE;
-    const bh = block.getHeight() / BLOCK_SIZE;
+    const bx = Math.floor(block.getX() / BLOCK_SIZE);
+    const by = Math.floor(block.getY() / BLOCK_SIZE);
+    const bw = Math.floor(block.getWidth() / BLOCK_SIZE);
+    const bh = Math.floor(block.getHeight() / BLOCK_SIZE);
 
     return (
         ball.getX() + ball.getRadius() > bx &&
@@ -60,22 +61,33 @@ function checkCollision(ball: Ball, block: Block): boolean {
     );
 }
 
-function tick(ball: Ball, blocks: Block[], ballPath: { x: number; y: number }[]) {
+let frames = 0;
+function tick(ball: Ball, blocks: Block[], ballPath: { x: number; y: number, t: number }[]) {
+    frames++;
     // 画面端で跳ね返る
-    if (ball.getX() < 0) {
+    let bounced = false;
+
+    // 壁
+    if (ball.getX() - ball.getRadius() < 0) {
         ball.setX(ball.getRadius());
         ball.bounceX();
-    } else if (ball.getX() + ball.getRadius() > COLS) {
-        ball.setX(COLS - ball.getRadius());
+        bounced = true;
+    } else if (ball.getX() + ball.getRadius() > COLS * BLOCK_SIZE) {
+        ball.setX(pixel(COLS - ball.getRadius()));
         ball.bounceX();
+        bounced = true;
     }
+    
     if (ball.getY() < 0) {
         ball.setY(ball.getRadius());
         ball.bounceY();
+        bounced = true;
     } else if (ball.getY() + ball.getRadius() > ROWS) {
-        ball.setY(ROWS - ball.getRadius());
+        ball.setY(pixel(ROWS - ball.getRadius()));
         ball.bounceY();
+        bounced = true;
     }
+    
 
     // ブロックとの衝突
     blocks.forEach(block => {
@@ -85,21 +97,29 @@ function tick(ball: Ball, blocks: Block[], ballPath: { x: number; y: number }[])
         block.setContribute(block.getContribute() - 1);
 
         // 衝突方向の判定（中心座標ベース）
-        const dx = ball.getX() - (block.getX() / BLOCK_SIZE + block.getWidth() / BLOCK_SIZE / 2);
-        const dy = ball.getY() - (block.getY() / BLOCK_SIZE + block.getHeight() / BLOCK_SIZE / 2);
+        const blockCenterX = block.getX() + block.getWidth() / 2;
+        const blockCenterY = block.getY() + block.getHeight() / 2;
+
+        const dx = ball.getX() - blockCenterX;
+        const dy = ball.getY() - blockCenterY;
+
 
         if (Math.abs(dx) > Math.abs(dy)) {
             ball.bounceX();
         } else {
             ball.bounceY();
         }
+        // 経路を記録
+
+        bounced = true;
     });
+
+    if (bounced) {
+        ballPath.push({ x: ball.getX(), y: ball.getY(), t: frames });
+    }
 
     // ボール移動
     ball.move();
-
-    // 経路を記録
-    ballPath.push({ x: ball.getX(), y: ball.getY() });
 }
 
 
@@ -116,7 +136,7 @@ export async function main() {
         const col = Math.floor(index / ROWS);
         if (c.contributionCount > 0) {
             const color = c.contributionCount <= 2 ? "#c6e48b" : c.contributionCount <= 4 ? "#7bc96f" : "#196127";
-            blocks.push(new Block(col * BLOCK_SIZE, row * BLOCK_SIZE, color, BLOCK_SIZE, BLOCK_SIZE, true, `block-${row}-${col}`, c.contributionCount));
+            blocks.push(new Block(grid(col * BLOCK_SIZE), grid(row * BLOCK_SIZE), color, grid(BLOCK_SIZE), grid(BLOCK_SIZE), true, `block-${row}-${col}`, c.contributionCount));
         }
     });
 
@@ -130,39 +150,53 @@ export async function main() {
     const startVy = (Math.random() * 2 - 1) * speedRange;
 
     // ボール生成
-    const ball = new Ball(startX, startY, startVx, startVy, BALL_RADIUS);
+    const ball = new Ball(
+        pixel(startX), pixel(startY), pixel(startVx), pixel(startVy), pixel(BALL_RADIUS)
+    );
 
-    const ballPath: { x: number; y: number }[] = [];
+    const ballPath: { x: number; y: number, t: number }[] = [];
     const blockHitFrames: Record<string, number> = {};
     blocks.forEach(b => blockHitFrames[b.getId()] = -1);
+    
+    // 最初の一回を記録
+    ballPath.push({ x: ball.getX(), y: ball.getY(), t: 0 });
 
-    let frame = 0;
     while (blocks.some(b => b.isAlive())) {
         tick(ball, blocks, ballPath);
         blocks.forEach(block => {
             if (!block.isAlive() && blockHitFrames[block.getId()] === -1) {
-                blockHitFrames[block.getId()] = frame;
+                blockHitFrames[block.getId()] = frames;
             }
         });
-        frame++;
     }
 
-    const animationDuration = (frame / FPS).toFixed(2);
+    const animationDuration = (frames / FPS).toFixed(2);
     const ballSize = BALL_RADIUS * BLOCK_SIZE * 2;
 
     // ballのキーフレーム
-    const keyframes = ballPath.map((pos, i) => {
-        const pct = (i / (ballPath.length - 1)) * 100;
-        const x = Math.min(pos.x * BLOCK_SIZE, COLS * BLOCK_SIZE - ballSize);
-        const y = Math.min(pos.y * BLOCK_SIZE, ROWS * BLOCK_SIZE - ballSize);
-        return `${pct.toFixed(2)}% { transform: translate(${x}px, ${y}px); }`;
+    // 重要点（反射点など）だけ入っている想定
+    const keyframes = ballPath.map(p => {
+        const pct = (p.t / frames * 100).toFixed(2);
+        
+        const x = Math.min(
+            p.x * BLOCK_SIZE,
+            COLS * BLOCK_SIZE - ballSize
+        );
+        
+        const y = Math.min(
+            p.y * BLOCK_SIZE,
+            ROWS * BLOCK_SIZE - ballSize
+        );
+        
+        return `${pct}% { transform: translate(${x}px, ${y}px); }`;
     }).join('\n');
+    
 
     // ブロックのアニメーション（体力→透明になる）
     const blockAnimations = blocks.map(block => {
         const f = blockHitFrames[block.getId()];
         if (f === -1 || !f) return '';
-        const delay = (f / frame * Number(animationDuration)).toFixed(2);
+        const delay = (f / frames * Number(animationDuration)).toFixed(2);
     
         const hp = block.getMaxContribute();
         const startColor = hp >= 4 ? "#196127" : hp >= 2 ? "#7bc96f" : "#c6e48b";
@@ -180,24 +214,39 @@ export async function main() {
     `;
     }).join('\n');
     
-    const svg = `<svg width="${COLS * BLOCK_SIZE}" height="${ROWS * BLOCK_SIZE}" xmlns="http://www.w3.org/2000/svg">
-<style>
-.ball { 
-    fill: #ff0000; 
-    width:${ballSize}px; 
-    height:${ballSize}px; 
-    animation: move ${animationDuration}s linear forwards; 
-}
-@keyframes move { ${keyframes} }
-@keyframes disappear { 0% { opacity: 1; } 100% { opacity: 0; } }
-${blockAnimations}
-</style>
-${blocks.map(b => b.toSVG()).join('\n')}
-<rect class="ball" x="0" y="0" width="${ballSize}" height="${ballSize}" />
-</svg>`;
+    const svg = `
+    <svg width="${COLS * BLOCK_SIZE}" height="${ROWS * BLOCK_SIZE}"
+         xmlns="http://www.w3.org/2000/svg">
+    <style>
+    .ball {
+      fill: #ff0000;
+      width: ${ballSize}px;
+      height: ${ballSize}px;
+      animation: move ${animationDuration}s linear forwards;
+    }
+    
+    @keyframes move {
+    ${keyframes}
+    }
+    
+    @keyframes disappear {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    ${blockAnimations}
+    </style>
+    
+    ${blocks.map(b => b.toSVG()).join('\n')}
+    
+    <rect class="ball" x="0" y="0"
+          width="${ballSize}" height="${ballSize}" />
+    </svg>
+    `;
 
     fs.writeFileSync('out.svg', svg);
     console.log('SVG出力しました: out.svg');
+    fs.writeFileSync('test.txt', JSON.stringify(blocks))
 }
 
 main();

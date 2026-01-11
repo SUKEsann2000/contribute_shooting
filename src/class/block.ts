@@ -1,31 +1,33 @@
+import { Grid, grid } from "../types.js";
+
 export class Block {
     constructor(
-        private x: number,
-        private y: number,
+        private x: Grid,
+        private y: Grid,
         private color: string,
-        private width: number,
-        private height: number,
+        private width: Grid,
+        private height: Grid,
         private alive: boolean,
         private id: string,
         private contribute: number,
-        private readonly maxContribute?: number
+        private readonly maxContribute?: number,
     ) {
         this.maxContribute = contribute
     }
 
     // x
-    getX(): number {
+    getX(): Grid {
         return this.x;
     }
-    setX(value: number) {
+    setX(value: Grid) {
         this.x = value;
     }
 
     // y
-    getY(): number {
+    getY(): Grid {
         return this.y;
     }
-    setY(value: number) {
+    setY(value: Grid) {
         this.y = value;
     }
 
@@ -38,18 +40,18 @@ export class Block {
     }
 
     // width
-    getWidth(): number {
+    getWidth(): Grid {
         return this.width;
     }
-    setWidth(value: number) {
+    setWidth(value: Grid) {
         this.width = value;
     }
 
     // height
-    getHeight(): number {
+    getHeight(): Grid {
         return this.height;
     }
-    setHeight(value: number) {
+    setHeight(value: Grid) {
         this.height = value;
     }
 
