@@ -124,8 +124,8 @@ export async function main() {
     const startX = Math.random() * (COLS - BALL_RADIUS * 2) + BALL_RADIUS;
     const startY = Math.random() * (ROWS - BALL_RADIUS * 2) + BALL_RADIUS;
 
-    // ランダムな速度（例えば -0.5〜0.5 の範囲で X/Y 両方）
-    const speedRange = 0.5;
+    // ランダムな速度（例えば -0.3〜0.3 の範囲で X/Y 両方）
+    const speedRange = 0.3;
     const startVx = (Math.random() * 2 - 1) * speedRange;
     const startVy = (Math.random() * 2 - 1) * speedRange;
 
